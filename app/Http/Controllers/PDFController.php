@@ -81,7 +81,6 @@ class PDFController extends Controller
 
           $issueDate = date('Y-m-d', strtotime(substr($load->issue, 0, 10)));
           $currentDate = date('Y-m-d', strtotime(substr($load->receiving, 0, 10)));
-          //dd($currentDate);
             //デフォルト背景色
             $bgcolor = '#ffffff';
             if (strpos($load->content, '待ち') !== false) {

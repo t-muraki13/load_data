@@ -138,7 +138,7 @@
                   $class .= ' bg-yellow-200';
                 }
             @endphp
-          <tr class="transition-colors duration-300">
+          <tr class="transition-colors duration-300" onclick="markAsSeen('${load.id}')">
               <td class="row-{{ $load->id }} {{ $class }}">
                   <button type="button" onclick="location.href='{{ route('edit', ['id' => $load->id])}}'" class="inline-flex ml-4 mb-2 text-white bg-gray-500 border-0 py-2 px-8 focus:outline-none hover:bg-gray-600 rounded text-lg">編集</button>
                   <button id="toggle-button-{{ $load->id }}" type="button" class="inline-flex ml-4 text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg" onclick="toggleComplete('{{ $load->id }}')">完了</button>
@@ -192,93 +192,14 @@
   <script src="{{ asset('js/index.js') }}"></script>
   <script src="{{ asset('js/pagination.js') }}"></script>
   <script src="{{ asset('js/pdf.js') }}"></script>
-  <script>
-    let markBadgeSeenUrl = "{{ route('mark-badge-seen') }}";
-  </script>
   <script src="{{ asset('js/badge.js') }}"></script>
   <script>
-
-    function getHtml(load) {
-      //console.log(load.id);
-      // 1. クラスリストの初期定義
-      // ★ ReferenceErrorを防ぐために'let'で変数を宣言し、初期クラスを設定
-      let classList = 'row-6 px-4 py-2 w-1/12 font-semibold text-base text-gray-700 border border-gray-700 text-center'; 
-      
-      // 2. 編集URLの定義
-      // ★ editUrlを定義。ルートは実際のアプリケーションに合わせて修正してください
-      const editUrl = `/edit/${load.id}`; // 例: /edit/123 の形式
-      
-      // 3. クラス追加の条件判定ロジック (Bladeのロジックを再現)
-      // ⚠️ 注意: JavaScriptのindexOfやincludesで文字列検索を行います
-      const isPending = load.content && load.content.includes('待ち');
-      const isPlace = load.place && load.place.includes('品川');
-      const isDelivery = load.remarks && (load.remarks.includes('WS') || load.remarks.includes('SC'));
-      const isBadge = load.is_new == 1; // APIのデータに is_new フィールドがある前提
-      
-      if (isPending) {
-        classList += ' bg-red-100';
-      }
-      if (isPlace) {
-        classList += ' bg-green-100';
-      }
-      if (isDelivery) {
-        classList += ' bg-blue-100';
-      }
-      if (isBadge) {
-        classList += ' bg-yellow-200';
-      }
-
-      //console.log(load);
-      
-      return `
-            <tr class="transition-colors duration-300">
-                <td class="row-${load.id} ${classList}">
-                    <button type="button" onclick="location.href='${editUrl}'" class="inline-flex ml-4 mb-2 text-white bg-gray-500 border-0 py-2 px-8 focus:outline-none hover:bg-gray-600 rounded text-lg">編集</button>
-                    <button id="toggle-button-${load.id}" type="button" class="inline-flex ml-4 text-white bg-red-500 border-0 py-2 px-8 focus:outline-none hover:bg-red-600 rounded text-lg" onclick="toggleComplete('${load.id}')">完了</button>
-                </td>
-                <td class="row-${load.id} ${classList}">${load.receiving || ''}</td>
-                <td class="row-${load.id} ${classList}">${load.name || ''}</td>
-                <td class="row-${load.id} ${classList}">${load.nameKana|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.number|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.content|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.charge|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.issue|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.remarks|| ''}</td>
-                <td class="row-${load.id} ${classList}">${load.place|| ''}</td>
-            </tr>
-        `;
-    }
-
-    const refresh = 5000;
-    async function fetchUsers() {
-      const currentParams = new URLSearchParams(window.location.search).toString();
-      console.log(currentParams);
-      const apiUrl = `http://127.0.0.1:8000/api/loadings/data?${currentParams}`;
-      const response = await fetch(apiUrl);
-      
-      const json = await response.json();
-      const data = json.loadings;
-      const loadElement = document.getElementById('load');
-
-      let rowData = '';
-
-     //console.log(data[0]);
-
-      for (const loadData of data) {
-        //console.log(loadData);
-        rowData += getHtml(loadData);
-        //console.log(rowData);
-      }
-
-      //console.log(rowData);
-
-      loadElement.innerHTML = rowData;
-      
-    }
-    
-    fetchUsers();
-
-    setInterval(fetchUsers, refresh);
-    
+    window.Laravel = {
+        apiBaseUrl: "{{ env('API_URL') }}"
+    };
+  </script>
+  <script src="{{ asset('js/load.js') }}"></script>
+  <script>
+    let markBadgeSeenUrl = "{{ route('mark-badge-seen') }}";
   </script>
 </x-app-layout>

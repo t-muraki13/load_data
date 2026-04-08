@@ -28,7 +28,6 @@ class MemoController extends Controller
 
     public function store(Request $request)
     {
-        //dd($request);
         $request->validate([
             'content' => ['required', 'string', 'max:255'],
         ]);
@@ -60,7 +59,6 @@ class MemoController extends Controller
 
     public function confirm(Request $request, $id)
     {
-        //dd($request, $id);
         $request->validate([
             'content' => ['required', 'string', 'max:255'],
         ]);

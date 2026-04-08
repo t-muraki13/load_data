@@ -16,7 +16,6 @@ class LoadingDataController extends Controller
         $query = $request->input('query');
         
         $baseQuery = Loading::query();
-        //dd($baseQuery);
         //日付で検索する
         if ($date) {
             $receivingQuery = clone $baseQuery;
@@ -44,7 +43,6 @@ class LoadingDataController extends Controller
                        str_contains(mb_strtolower($load->number ?? ''), $searchQuery);
             })->values();
         }
-
         //フロントエンドでの処理のために生のデータを返す
         return response()->json([
             'loadings' => $loadings->toArray(),
