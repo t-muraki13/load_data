@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Loading;
+use App\Constants\Common;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
@@ -25,15 +26,13 @@ class LoadingController extends Controller
         $date = $request->input('date');
         //検索クエリパラメーター
         $query = $request->input('query');
-        //dd($name);
         $parseDate = null;
-    
-        // 日付が存在する場合、Carbonでパース
+
         if ($date) {
             try {
-                $parseDate = Carbon::parse($date)->format('Y-m-d'); // データベースの日付形式に合わせる
+                // データベースの日付形式に合わせる
+                $parseDate = Carbon::parse($date)->format('Y-m-d');
             } catch (\Exception $e) {
-                // 日付が無効な場合のエラーハンドリング
                 $parseDate = null;
             }
         }
@@ -49,7 +48,6 @@ class LoadingController extends Controller
                       ->orwhere('nameKana', 'like', "%{$queryValue}%")
                       ->orwhere('number', 'like', "%{$queryValue}%");
             });
-        
         // 出庫日の時間順に並べる
         $issueQuery = Loading::select('id', 'receiving', 'name', 'nameKana', 'number', 'content', 'charge', 'issue', 'remarks', 'place', 'is_new')
             ->when($parseDate, function ($query, $parseDate) {
@@ -62,14 +60,25 @@ class LoadingController extends Controller
                       ->orwhere('number', 'like', "%{$queryValue}%");
             });
         
-        // クエリ結果をマージ
         $receivingLoadings = $receivingQuery->get();
         $issueLoadings = $issueQuery->get();
-        
-        // コレクションをマージし、手動でページネーションを適用
+
+        $sort = $request->get('sort');
         $mergedLoadings = $receivingLoadings->merge($issueLoadings);
+
+        //ソート処理
+        if ($sort === Common::SORT_ORDER['receiving']) {
+            $mergedLoadings = $mergedLoadings->sortBy('receiving')->values();
+        } elseif ($sort === Common::SORT_ORDER['name']) {
+            $mergedLoadings = $mergedLoadings->sortBy('name')->values();
+        } elseif ($sort === Common::SORT_ORDER['charge']) {
+            $mergedLoadings = $mergedLoadings->sortBy('charge')->values();
+        } elseif ($sort === Common::SORT_ORDER['issue']) {
+            $mergedLoadings = $mergedLoadings->sortBy('issue')->values();
+        } elseif ($sort === Common::SORT_ORDER['place']) {
+            $mergedLoadings = $mergedLoadings->sortBy('place')->values();
+        }
         
-        // ページネーションの手動実装
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $perPage = $pagination;
         $currentResults = $mergedLoadings->slice(($currentPage - 1) * $perPage, $perPage)->values();
@@ -78,7 +87,7 @@ class LoadingController extends Controller
          'query' => $request->query(),
         ]);
 
-        // is_newがtrueのレコード数をカウント
+        //新しく登録された件数のレコード数をカウント
         $badgeCount = Loading::where('is_new', true)->count();
         
         return view('top', [
@@ -94,13 +103,12 @@ class LoadingController extends Controller
 
     public function store(Request $request)
     {
-        //dd($request);
         if (!session()->has('session_started')) {
             session()->put('session_started', true);
         }
 
-        $userId = auth()->check() ? auth()->id() : session()->getId(); //ユーザーIDで管理
-        //dd($userId);
+        $userId = auth()->check() ? auth()->id() : session()->getId();
+
         $lockKey = 'processing_' . $userId;
 
         $lock = Cache::lock($lockKey, 10);
@@ -112,8 +120,7 @@ class LoadingController extends Controller
                 'status' => 'info'])
             ->withInput();
         }
-        //dd($lock);
-        //dd($request);
+
         $request->validate([
             'receiving' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
@@ -158,13 +165,12 @@ class LoadingController extends Controller
     public function edit($id)
     {
         $loading = Loading::findOrFail($id);
-        //dd($loading);
+
         return view('edit', compact('loading'));
     }
 
     public function confirm(Request $request, $id)
     {
-        //dd($request, $id);
         $request->validate([
             'receiving' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
@@ -190,8 +196,6 @@ class LoadingController extends Controller
             'place' => $request->place
         ];
         
-        //dd($loading, $receiving, $name, $number, $charge, $issue, $remarks, $place);
-        // フラッシュメッセージをセッションに保存
         session()->flash('message', '情報を更新しますか？');
         session()->flash('status', 'confirm');
 
@@ -201,7 +205,6 @@ class LoadingController extends Controller
 
     public function update(Request $request, $id)
     {
-        //dd($request, $id);
         $loading = Loading::findOrFail($id);
         $loading->receiving = $request->receiving;
         $loading->name = $request->name;
@@ -224,7 +227,7 @@ class LoadingController extends Controller
     public function toggleComplete($id)
     {
         $loading = Loading::findOrFail($id);
-        $loading->is_completed = !$loading->is_completed; // 状態を反転
+        $loading->is_completed = !$loading->is_completed;
         $loading->save();
 
         return response()->json(['is_completed' => $loading->is_completed]);
@@ -233,7 +236,7 @@ class LoadingController extends Controller
     public function markBadgeSeen(Request $request)
     {
         // 現在のユーザーに関連するバッジを「確認済み」にする
-        Loading::where('is_new', true)->update(['is_new' => false]);
+        Loading::where('id', $request->id)->update(['is_new' => false]);
     
         return response()->json(['status' => 'success']);
     }

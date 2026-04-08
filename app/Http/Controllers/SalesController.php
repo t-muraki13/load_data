@@ -18,7 +18,6 @@ class SalesController extends Controller
         $pagination = $request->pagination ?? 20;
         $date = $request->input('date');
         $parseDate = null;
-        //dd($request->pagination);
 
         if ($date) {
             try {
@@ -27,7 +26,6 @@ class SalesController extends Controller
                 $parseDate = null;
             }
         }
-        //dd($date);
 
         $query = Sales::select('id', 'receiving', 'name', 'nameKana', 'number', 'content', 'charge', 'is_new')
             ->when($parseDate, function($query, $parseDate) {
@@ -41,7 +39,6 @@ class SalesController extends Controller
         $sales = $query->paginate($pagination);
         $salesBadgeCount = Sales::where('is_new', true)->count();
 
-        //dd($sales);
         return view('sales.index', compact('sales', 'salesBadgeCount'));
     }
 
@@ -52,7 +49,6 @@ class SalesController extends Controller
 
     public function store(Request $request)
     {
-        //dd($request);
         $request->validate([
             'receiving' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
@@ -87,7 +83,6 @@ class SalesController extends Controller
     
     public function edit($id)
     {
-        //dd($id);
         $sales = Sales::findOrFail($id);
 
         return view('sales.edit', compact('sales'));
@@ -95,7 +90,6 @@ class SalesController extends Controller
 
     public function confirm(Request $request, $id)
     {
-        //dd($request, $id);
         $request->validate([
             'receiving' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
@@ -122,7 +116,6 @@ class SalesController extends Controller
 
     public function update(Request $request, $id)
     {
-        //dd($request, $id);
         $sales = Sales::findOrFail($id);
         $sales->receiving = $request->receiving;
         $sales->name = $request->name;
@@ -141,7 +134,6 @@ class SalesController extends Controller
 
     public function destroy($id)
     {
-        //dd($id);
         Sales::findOrFail($id)->delete();
 
         return redirect()

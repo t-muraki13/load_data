@@ -1,23 +1,18 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-  const markBadgeSeenUrl = '/mark-badge-seen';
+function markAsSeen(id) {
+    console.log(id);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-  fetch(markBadgeSeenUrl, {
-      method: 'POST',
+    fetch('/mark-badge-seen', {
+        method: 'POST',
       headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': csrfToken,
       },
-      body: JSON.stringify({
-          _token: csrfToken
-      })
-  }).then(response => {
-      if (response.ok) {
-          console.log('Badge marked as seen');
-      } else {
-          console.error('Failed to mark badge as seen');
-      }
-  }).catch(error => {
-      console.error('Error:', error);
-  });
-});
+      body: JSON.stringify({ id: id })
+    }).then(() => {
+        document.querySelectorAll(`.row-${id}`).forEach(td => {
+            console.log(td.classList);
+            td.classList.remove('bg-yellow-200');
+        });
+    });
+}
